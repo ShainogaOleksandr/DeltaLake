@@ -24,8 +24,8 @@ object MergeTest {
         functions.concat(functions.lit("new_Prefix "), $"title"))
       .withColumn("genres",
         functions.concat(functions.lit("new_Prefix "), $"genres"))
-//      .withColumn("movieId",
-//        functions.concat(functions.lit("movieId "), $"movieId"))
+    //      .withColumn("movieId",
+    //        functions.concat(functions.lit("movieId "), $"movieId"))
 
     val dfForUpdate3 = df.filter("movieId % 2 == 0")
       .withColumn("title1",
@@ -36,23 +36,38 @@ object MergeTest {
         functions.concat(functions.lit("movieId "), $"movieId")).drop("title")
       .drop("genres")
 
-//    DeltaTable.forPath(spark, outputPath).as("movies").merge(
-//      dfForUpdate1.as("updates"), "movies.movieId = updates.movieId"
-//    ).whenMatched().updateExpr(Map("title" -> "updates.genres"))
-//      .whenNotMatched().insertExpr(
-//      Map(
-//        "movieId" -> "updates.genres",
-//        "title" -> "updates.movieId",
-//        "genres" -> "updates.title")).execute()
+    val dfForUpdate3_1 = df.filter("movieId >18 == 0")
+      .withColumn("title1",
+        functions.concat(functions.lit("new_Prefix "), $"title"))
+      .withColumn("genres2",
+        functions.concat(functions.lit("new_Prefix "), $"genres"))
+      .withColumn("movieId",
+        functions.concat(functions.lit("movieId "), $"movieId")).drop("title")
+      .drop("genres")
+
+    //    DeltaTable.forPath(spark, outputPath).as("movies").merge(
+    //      dfForUpdate1.as("updates"), "movies.movieId = updates.movieId"
+    //    ).whenMatched().updateExpr(Map("title" -> "updates.genres"))
+    //      .whenNotMatched().insertExpr(
+    //      Map(
+    //        "movieId" -> "updates.genres",
+    //        "title" -> "updates.movieId",
+    //        "genres" -> "updates.title")).execute()
+    dfForUpdate1.show(false)
+    df.show(false)
 
     DeltaTable.forPath(spark, outputPath).as("movies").merge(
       dfForUpdate1.as("updates"), "movies.movieId = updates.movieId"
-          ).whenMatched("movies.movieId >10").updateAll()
-            .whenNotMatched().insertAll()
-        .execute()
-    DeltaTable.forPath(spark, outputPath).toDF.show(40,false)
+    )
+      .whenMatched("movies.movieId >10")
+      .updateAll()
+      .whenMatched("movies.movieId >1") // conflict wit previous  when match
+      .delete()
+      //      .delete()
+      .whenNotMatched("movies.movieId =11")
+      .insertAll()
+      .execute()
 
-
-
+    DeltaTable.forPath(spark, outputPath).toDF.show(40, false)
   }
 }
